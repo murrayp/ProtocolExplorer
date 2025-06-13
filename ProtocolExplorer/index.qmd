@@ -25,11 +25,11 @@ import sympy as sp
 app_ui = ui.page_fluid(
     ui.layout_sidebar(
         ui.sidebar(
-    ui.input_slider(id="R_1",label="Rad. 1 (c.d.)",min=4,max=40,value=4,step=1),
-    ui.input_slider(id="R_2",label=" Rad. 2 (c.d.)",min=4.0,max=40.0,value=10.0,step=0.01),
-    ui.input_slider(id="k",label="Uptake rate",min=1.0,max=10.0,value=5.0,step=0.01), 
+    ui.input_slider(id="R_1",label="Rad. 1 (c.d.)",min=1,max=20,value=4,step=0.1),
+    ui.input_slider(id="R_2",label=" Rad. 2 (c.d.)",min=1.0,max=40.0,value=10.0,step=0.1),
+    ui.input_slider(id="k",label="Uptake rate",min=0.1,max=10.0,value=5.0,step=0.1), 
     ui.input_slider(id="d",label="Release rate",min=0.0,max=0.1,value=0.01,step=0.001), 
-    ui.input_slider(id="D",label="Diff. co.",min=5.0,max=100.0,value=30.0,step=1),
+    ui.input_slider(id="D",label="Diff. co.",min=1.0,max=100.0,value=30.0,step=1),
     ui.input_slider(id="t_1",label="Treat. on dur. (d)",min=0.0,max=6.0,value=1.0,step=1),
     ui.input_slider(id="t_2",label="Treat. off dur. (d)",min=0.0,max=28.0,value=6.0,step=1),
     ui.input_slider(id="bound_conc",label="Treatment conc",min=0.01,max=0.4,value=0.05,step=0.01),
