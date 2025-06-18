@@ -152,6 +152,50 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 from scipy.integrate import odeint
 import sympy as sp
+from scipy.special import iv
+
+
+def ComputeEnvelope(radial_coordinate,R,diff_length_min_1,time_av_bc_u,modified_bc_t_1,modified_bc_t_2):
+    #diff_length_min_1=np.sqrt(self.uptake_rate/self.D)
+    #time_av_bc_u= self.t_1/(self.t_1+self.t_2)*self.bound_conc
+    #modified_bc_t_1=self.bound_conc-time_av_bc_u
+    #modified_bc_t_2=0.0-time_av_bc_u
+
+
+    envelope= iv(0,diff_length_min_1*radial_coordinate)/iv(0,diff_length_min_1*R)
+
+    envelope_t1=envelope*modified_bc_t_1+time_av_bc_u
+    envelope_t2=envelope*modified_bc_t_2+time_av_bc_u
+    
+    return envelope_t1,envelope_t2
+
+def ComputePeriodicConditiononC(beta_1,beta_2,d,t_1,t_2):
+
+        
+        num=beta_2/d+((beta_1-beta_2)/d-beta_1/d*np.exp(-d*t_1))*np.exp(-d*(t_2-t_1))
+        denom= 1-np.exp(-d*t_2)
+
+        C=num/denom
+        
+        return C
+def ComputeTimeSeries(radial_coordinate,R,t_1,t_2,uptake_rate,deg_rate,D,bound_conc,t_samp1,t_samp2):
+
+    diff_length_min_1=np.sqrt(uptake_rate/D)
+    time_av_bc_u= t_1/(t_1+t_2)*bound_conc
+    modified_bc_t_1=bound_conc-time_av_bc_u
+    modified_bc_t_2=0.0-time_av_bc_u
+    
+    envelope_t_1,envelope_t_2=ComputeEnvelope(radial_coordinate,R,diff_length_min_1,time_av_bc_u,modified_bc_t_1,modified_bc_t_2)
+
+    beta_1=uptake_rate*envelope_t_1
+    beta_2=uptake_rate*envelope_t_2
+
+    C=ComputePeriodicConditiononC(beta_1,beta_2,deg_rate,t_1,t_2)
+
+    sol_1=   beta_1/deg_rate+(C-beta_1/deg_rate)*np.exp(-deg_rate*t_samp1) 
+    factor=(beta_1-beta_2)/deg_rate + (C-beta_1/deg_rate)*np.exp(-deg_rate*t_1)
+    sol_2=   beta_2/deg_rate+factor*np.exp(-deg_rate*(t_samp2-t_1))
+    return sol_1, sol_2
 
 app_ui = ui.page_fluid(
     ui.layout_sidebar(
@@ -188,55 +232,25 @@ def server(input, output, session):
         t_samp1=np.linspace(0,t_1,1000)
         t_samp2=np.linspace(t_1,t_2,1000)
 
-
-        x_hmm=np.exp(-(t_2-t_1)*deg_rate)
-
-        C=uptake_rate*bound_conc*t_1*x_hmm/(1-x_hmm)
-        sol_1=C+bound_conc*uptake_rate*t_samp1
-        sol_2=(C+bound_conc*uptake_rate*t_1)*np.exp(-deg_rate*(t_samp2-t_1))
-
         
+        radial_coordinate=R_1
+        sol_1,sol_2=ComputeTimeSeries(radial_coordinate,R_1,t_1,t_2,uptake_rate,deg_rate,D,bound_conc,t_samp1,t_samp2)
 
 
+        sol1_mod_1,sol2_mod_1=ComputeTimeSeries(0.0,R_1,t_1,t_2,uptake_rate,deg_rate,D,bound_conc,t_samp1,t_samp2)
+
+        sol1_mod_2,sol2_mod_2=ComputeTimeSeries(0.0,R_2,t_1,t_2,uptake_rate,deg_rate,D,bound_conc,t_samp1,t_samp2)
+
+        max_R=np.max([R_1,R_2])
+
+        r=np.linspace(0.0,max_R,100)
+        diff_length_min_1=np.sqrt(uptake_rate/D)
+        time_av_bc_u= t_1/(t_1+t_2)*bound_conc
+        modified_bc_t_1=bound_conc-time_av_bc_u
+        modified_bc_t_2=0.0-time_av_bc_u
+
+        envelope_upper_radius,envelope_lower_radius=ComputeEnvelope(r,max_R,diff_length_min_1,time_av_bc_u,modified_bc_t_1,modified_bc_t_2)
         
-
-        #envelope_factor=np.exp(-np.sqrt(self.uptake_rate/self.D)*x)
-
-        A_max=C+bound_conc*uptake_rate*t_1
-        A_av= 1/t_2*(C*t_1+0.5*bound_conc*uptake_rate*t_1**2+(C+bound_conc*uptake_rate*t_1)/deg_rate*(1-np.exp(-deg_rate*(t_2-t_1))))
-
-        A_min=C
-
-        
-        L_plot=np.max([R_1,R_2])
-        x_1=np.linspace(0,L_plot,100)
-        envelope_factor_radius=np.exp(-np.sqrt(uptake_rate/D)*(L_plot-x_1))
-        envelope_upper_radius=A_av+envelope_factor_radius*(A_max-A_av)
-        envelope_lower_radius=A_av-envelope_factor_radius*(A_av-A_min)
-
-        
-        envelope_factor_1=np.exp(-np.sqrt(uptake_rate/D)*(R_1))
-
-        envelope_upper_1=A_av+envelope_factor_1*(A_max-A_av)
-        envelope_lower_1=A_av-envelope_factor_1*(A_av-A_min)
-
-        envelope_factor_2=np.exp(-np.sqrt(uptake_rate/D)*(R_2))
-        envelope_upper_2=A_av+envelope_factor_2*(A_max-A_av)
-        envelope_lower_2=A_av-envelope_factor_2*(A_av-A_min)
-
-        envelope_factor_per=np.exp(-np.sqrt(uptake_rate/D)*(0))
-        envelope_upper_per=A_av+envelope_factor_per*(A_max-A_av)
-        envelope_lower_per=A_av-envelope_factor_per*(A_av-A_min)
-
-        sol1_mod_1=(sol_1-A_av)*envelope_factor_1+A_av
-        
-        sol2_mod_1=(sol_2-A_av)*envelope_factor_1+A_av
-
-        sol1_mod_2=(sol_1-A_av)*envelope_factor_2+A_av
-        
-        sol2_mod_2=(sol_2-A_av)*envelope_factor_2+A_av
-
-
         num_cycles_plot=2
         fig,ax=plt.subplots(2,2,figsize=(4,4))
 
@@ -249,9 +263,9 @@ def server(input, output, session):
         for i in range(num_cycles_plot):
             ax[1,0].plot(t_samp1+ i*(t_1+t_2) ,sol1_mod_2,'k--',t_samp2+ i*(t_1+t_2) ,sol2_mod_2,'k--') 
 
-        ax[1,1].plot(x_1,envelope_upper_radius,x_1,envelope_lower_radius)
-        ax[1,1].plot([L_plot-R_1,L_plot-R_1],[0, np.max(envelope_upper_radius)],'r--')
-        ax[1,1].plot([L_plot-R_2,L_plot-R_2],[0, np.max(envelope_upper_radius)],'k--')
+        ax[1,1].plot(r,envelope_upper_radius,r,envelope_lower_radius)
+        ax[1,1].plot([max_R-R_1,max_R-R_1],[0, np.max(envelope_upper_radius)],'r--')
+        ax[1,1].plot([max_R-R_2,max_R-R_2],[0, np.max(envelope_upper_radius)],'k--')
 
         ax[0,0].set_title('Treatment protocol')  
         ax[0,1].set_title('Conc. bound periphery')
