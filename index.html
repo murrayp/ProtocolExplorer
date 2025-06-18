@@ -250,7 +250,10 @@ def server(input, output, session):
         modified_bc_t_2=0.0-time_av_bc_u
 
         envelope_upper_radius,envelope_lower_radius=ComputeEnvelope(r,max_R,diff_length_min_1,time_av_bc_u,modified_bc_t_1,modified_bc_t_2)
-        
+
+        envelope_upper_radius=envelope_upper_radius*uptake_rate/deg_rate
+        envelope_lower_radius=envelope_lower_radius*uptake_rate/deg_rate
+
         num_cycles_plot=2
         fig,ax=plt.subplots(2,2,figsize=(4,4))
 
